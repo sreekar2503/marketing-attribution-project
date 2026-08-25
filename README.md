@@ -256,7 +256,7 @@ engineering substitutes for.
 
 Reconciling the taxonomies made the two systems comparable on one axis. It did nothing whatsoever
 to make their revenue figures mean the same thing. Mapping `Fintech`→`finance` does not reconcile
-\$54.2M against \$10.0M.
+a platform conversion with a signed contract.
 
 A shared reference table that governs only *category values* leaves the larger disagreement in
 place. It has to govern **metric definitions** too, or the organisation ends up with two systems

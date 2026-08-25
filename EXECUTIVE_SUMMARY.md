@@ -35,12 +35,16 @@ until someone asked a question that spanned both.
 
 ## A second problem we found along the way
 
-Both systems report a number called **"revenue."** They disagree by **5.4x** — $54.2M according to
-the ad platform, $10.0M according to the CRM.
+Both systems report a number called **"revenue,"** and they do not mean the same thing by it.
 
-The two systems also count "successes" differently: the ad platform counted **326,812
-conversions**; the CRM recorded **4,238 won deals**. A "conversion" might be a form fill. A "won
-deal" is a signed contract. Both numbers appear on dashboards without that distinction attached.
+The clearest sign is how each counts a "success." The ad platform counted **326,812
+conversions** — a conversion might be a form fill or an item added to a basket. The CRM recorded
+**4,238 won deals** — a won deal is a signed contract. Different things, same word, and both
+numbers appear on dashboards without that distinction attached.
+
+We are deliberately not publishing a ratio between the two revenue figures. The systems cover
+different time periods and count different events, so any such number would say more about the
+mismatch than about the business — and a figure that precise invites being taken at face value.
 
 **Ask "what was our revenue?" and you get two defensible answers an order of magnitude apart,
 with nothing in either system to settle which one is right.**
