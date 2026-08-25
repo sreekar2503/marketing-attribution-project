@@ -241,3 +241,39 @@ def test_both_documents_state_the_contrast(text):
     for doc in DOCS:
         assert CONVERSIONS.search(text[doc]), f"{doc} dropped the conversions count"
         assert WON_DEALS.search(text[doc]), f"{doc} dropped the won-deals count"
+
+
+# --- deletion is not caught by a subset check ---------------------------------
+#
+# A subset assertion asks whether every figure present is justified, so a
+# document with the result cut out satisfies it trivially -- nothing
+# unjustified is left behind. Wrongness and absence are different failures
+# needing opposite tests, so the coverage result gets a presence check too, the
+# same guard `test_both_documents_state_the_contrast` gives the event counts.
+#
+# Scope, stated precisely rather than optimistically: this catches a document
+# that stops stating the result ANYWHERE. It does not catch one section being
+# removed while the figure survives elsewhere in the same file -- deleting the
+# README's Reconciliation Fix section still passes, because the lede, the chart
+# caption and the findings table all state 79.3% independently, so the document
+# does still state the result. Catching section-level loss would mean asserting
+# on headings, which breaks the first time one is legitimately reworded; that is
+# the brittleness this file avoids elsewhere and it is not worth buying here.
+
+@pytest.mark.parametrize("doc", sorted(DOCS))
+def test_both_documents_still_state_the_coverage_result(doc, text, before_after):
+    """
+    The headline finding may not silently vanish from either document. Accepts
+    any rendering the pipeline justifies, at either precision, so rewording and
+    re-rounding are free -- only deletion fails.
+    """
+    rec = before_after.loc["reconciled_crosswalk"]
+    found = {m.group(1) for m in PCT.finditer(text[doc])}
+    for label, value in [
+        ("ad spend coverage", rec["ad_spend_coverage"]),
+        ("CRM revenue coverage", rec["crm_revenue_coverage"]),
+    ]:
+        pct = value * 100
+        assert found & {f"{pct:.1f}", f"{round(pct):d}"}, (
+            f"{doc} no longer states the {label} result ({value:.1%}) anywhere"
+        )
