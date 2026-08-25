@@ -10,8 +10,25 @@ binding it. The manual grep that found the second instance only ran because a
 reviewer asked; that is precisely the "only protects you if someone remembers
 to run it" problem the CI layer exists to solve.
 
-So: retired figures may not reappear, and every headline figure the documents
-quote must equal what the pipeline actually produced.
+So: retired figures may not reappear, and every figure the documents quote must
+be a rendering of a number the pipeline actually produced.
+
+What these checks do and do not guarantee
+-----------------------------------------
+The value checks are SUBSET assertions -- every figure of a given shape must be
+justified -- not presence assertions. That distinction is load-bearing: an
+earlier version asked only whether the correct value appeared somewhere in the
+file, which passes while the prose states something false, as long as the right
+number survives in a table further down.
+
+What they still do not catch is a figure that is individually legitimate but in
+the wrong place: swapping `79.3%` for `52.5%` passes, because both are real
+outputs. Binding each figure to its own label would catch that, and is done
+below for the two event counts, where the anchor words are stable. It is not
+done for the coverage and dollar figures, which appear in prose, tables, chart
+captions and callouts with no consistent surrounding phrasing -- an anchor there
+would be brittle enough to fail on rewording, which trains people to ignore it.
+The limitation is real and is recorded here rather than papered over.
 """
 
 import re
@@ -60,69 +77,156 @@ def test_no_retired_figures(doc, text):
     assert not found, f"{doc} quotes retired figure(s): {'; '.join(found)}"
 
 
-# --- quoted headline figures match the pipeline -------------------------------
+# --- every figure quoted must be one the pipeline produced ---------------------
+#
+# These are SUBSET assertions, not presence assertions, and the distinction is
+# the whole point. An earlier version asked "does the correct number appear
+# somewhere in this file?" -- which passes while the document states something
+# false, as long as the right value survives anywhere else in the same file.
+# Replacing every `79.3%` in the prose with `81.4%` went green, because `79.3pp`
+# in a table downstream satisfied the check. A check that reports success while
+# the artefact is wrong is the exact failure this project documents.
+#
+# So the direction is inverted: extract EVERY figure of the given shape, and
+# require the whole set to be renderings of numbers the pipeline actually
+# produced. A wrong value anywhere fails, and cannot be masked by a right one.
 
-def _nums(s):
-    """Every number in the text, commas stripped, as a set of strings."""
-    return {m.replace(",", "") for m in re.findall(r"\d[\d,]*(?:\.\d+)?", s)}
+# `\b` must apply to `pp` only. Anchoring it after the alternation instead --
+# `(?:%|pp)\b` -- silently matches nothing ending in `%`, because `%` and the
+# space after it are both non-word characters, so there is no boundary between
+# them. That version extracted the `pp` figures, ignored every percentage, and
+# reported green. It is in this file's history; the mutation tests caught it.
+PCT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:%|pp\b)")
+USD = re.compile(r"\\?\$\s*(\d[\d,]*(?:\.\d+)?)\s*([MK]?)")
 
-
-@pytest.mark.parametrize("doc", sorted(DOCS))
-def test_totals_quoted_are_the_real_totals(doc, text, before_after):
-    """
-    Both documents lead on the two headline totals. If a notebook re-run moved
-    either, the prose must move with it -- this is the check that was missing.
-    """
-    n = _nums(text[doc])
-    ad_total = before_after["ad_spend_total"].iloc[0]
-    crm_total = before_after["crm_revenue_total"].iloc[0]
-
-    # Full precision or the abbreviated $11.1M / $10.0M form; either counts.
-    assert (f"{ad_total:.0f}" in n) or (f"{ad_total/1e6:.1f}" in n), \
-        f"{doc} does not quote the real ad spend total ({ad_total:,.0f})"
-    assert (f"{crm_total:.0f}" in n) or (f"{crm_total/1e6:.1f}" in n), \
-        f"{doc} does not quote the real CRM revenue total ({crm_total:,.0f})"
-
-
-@pytest.mark.parametrize("doc", sorted(DOCS))
-def test_coverage_percentages_quoted_are_real(doc, text, before_after):
-    """
-    The 0% → 79.3% / 52.5% result, at whatever precision the document chooses.
-    The README quotes one decimal; EXECUTIVE_SUMMARY.md rounds to 79% and 53%
-    because it is written for a non-technical reader, and that is correct rather
-    than sloppy. What must not vary is the underlying number, so both the exact
-    and rounded renderings are accepted -- and nothing else is.
-    """
-    rec = before_after.loc["reconciled_crosswalk"]
-    n = _nums(text[doc])
-    for label, value in [
-        ("ad spend coverage", rec["ad_spend_coverage"]),
-        ("crm revenue coverage", rec["crm_revenue_coverage"]),
-    ]:
-        pct = value * 100
-        accepted = {f"{pct:.1f}", f"{round(pct):d}"}
-        assert accepted & n, (
-            f"{doc} does not quote the real {label} ({value:.1%}); "
-            f"expected one of {sorted(accepted)}"
-        )
+# Structural or upstream figures with no cell in output/ to bind them to.
+#   0, 100 -- rhetorical denominators ("100% unreconciled", "do not chase 100%")
+#   16     -- share of CRM deals with a null account, computed in notebook 01
+#             from the raw pipeline and never persisted to output/. Listed here
+#             rather than derived so this test stays runnable without data/raw/.
+CONTEXTUAL_PCT = {"0", "0.0", "100", "16"}
+CONTEXTUAL_USD = {"0", "0.00"}
 
 
-def test_event_counts_agree_across_both_documents(text):
-    """
-    326,812 conversions vs 4,238 won deals is the one cross-system contrast that
-    survived the trim, and it now carries the argument in both files. If it is
-    corrected in one place it has to be corrected in both.
-    """
-    for count in ["326812", "4238"]:
-        present = [d for d in DOCS if count in _nums(text[d])]
-        assert len(present) == len(DOCS), (
-            f"{count} appears only in {present} -- the two documents disagree"
-        )
+def _pct(value):
+    """Percentage renderings this project uses: one decimal, or rounded."""
+    return {f"{value:.1f}", f"{round(value)}"}
 
 
-def test_won_deals_figure_matches_the_data(text):
-    """And that contrast is not just internally consistent, but correct."""
+@pytest.fixture(scope="module")
+def accepted_pct():
+    """Every percentage the pipeline can justify, at either precision."""
+    ba = pd.read_csv("output/before_after_comparison.csv")
+    mix = pd.read_csv("output/mix_comparison.csv")
     crm = pd.read_csv("output/crm_by_sector.csv")
-    won = int(crm["deals_won"].sum())
+
+    ok = set(CONTEXTUAL_PCT)
+    for col in ["ad_spend_coverage", "crm_revenue_coverage", "category_match_rate"]:
+        for v in ba[col]:
+            ok |= _pct(v * 100)
+    for col in ["spend_share", "revenue_share"]:
+        for v in mix[col]:
+            ok |= _pct(v * 100)
+    for v in mix["gap_pp"]:
+        ok |= _pct(abs(v))
+
+    # The technolgy sensitivity: its share of CRM revenue, and the coverage that
+    # folding it into SaaS would produce. Both are quoted; neither is a column.
+    total = crm["crm_revenue"].sum()
+    tech = crm.loc[crm["sector"] == "technolgy", "crm_revenue"].sum()
+    matched = ba["crm_revenue_matched"].max()
+    ok |= _pct(tech / total * 100)
+    ok |= _pct((matched + tech) / total * 100)
+    return ok
+
+
+@pytest.fixture(scope="module")
+def accepted_usd():
+    """Every dollar figure the pipeline can justify: plain forms and $X.XM."""
+    ba = pd.read_csv("output/before_after_comparison.csv")
+    crm = pd.read_csv("output/crm_by_sector.csv")
+    ads = pd.read_csv("output/ads_by_industry.csv")
+
+    values = set()
+    for col in ["ad_spend_total", "ad_spend_matched",
+                "crm_revenue_total", "crm_revenue_matched"]:
+        values |= set(ba[col])
+    values |= set(crm["crm_revenue"]) | set(ads["ad_spend"])
+
+    # Derived, and quoted: the unreconciled remainders in the before/after chart,
+    # and the technolgy-inclusive alternative in the sensitivity table.
+    ad_t, crm_t = ba["ad_spend_total"].iloc[0], ba["crm_revenue_total"].iloc[0]
+    ad_m, crm_m = ba["ad_spend_matched"].max(), ba["crm_revenue_matched"].max()
+    tech = crm.loc[crm["sector"] == "technolgy", "crm_revenue"].sum()
+    values |= {ad_t - ad_m, crm_t - crm_m, crm_m + tech}
+
+    plain, millions = set(CONTEXTUAL_USD), set()
+    for v in values:
+        plain |= {f"{v:.2f}", f"{v:.0f}"}
+        millions |= {f"{v / 1e6:.1f}", f"{v / 1e6:.2f}"}
+    return plain, millions
+
+
+@pytest.mark.parametrize("doc", sorted(DOCS))
+def test_every_percentage_is_a_real_figure(doc, text, accepted_pct):
+    """A wrong percentage anywhere fails, even if the right one appears too."""
+    found = {m.group(1) for m in PCT.finditer(text[doc])}
+    unjustified = sorted(found - accepted_pct, key=float)
+    assert not unjustified, (
+        f"{doc} quotes percentage(s) the pipeline does not produce: "
+        f"{unjustified}"
+    )
+
+
+@pytest.mark.parametrize("doc", sorted(DOCS))
+def test_every_dollar_figure_is_a_real_figure(doc, text, accepted_usd):
+    """Same inversion for money, including the abbreviated $X.XM form."""
+    plain, millions = accepted_usd
+    unjustified = []
+    for m in USD.finditer(text[doc]):
+        raw, suffix = m.group(1).replace(",", ""), m.group(2)
+        if suffix == "M":
+            if raw not in millions:
+                unjustified.append(f"${raw}M")
+        elif raw not in plain:
+            unjustified.append(f"${raw}")
+    assert not unjustified, (
+        f"{doc} quotes dollar figure(s) the pipeline does not produce: "
+        f"{sorted(set(unjustified))}"
+    )
+
+
+# --- the cross-system event contrast ------------------------------------------
+
+CONVERSIONS = re.compile(r"([\d,]+)\s*\*{0,2}\s*\n?\s*conversions")
+WON_DEALS = re.compile(r"([\d,]+)\s*\*{0,2}\s*\n?\s*won deals")
+
+
+@pytest.mark.parametrize("doc", sorted(DOCS))
+def test_event_counts_are_correct_wherever_they_are_stated(doc, text):
+    """
+    326,812 conversions against 4,238 won deals is the contrast that survived
+    the trim, and it now carries the argument in both files.
+
+    Anchored on the words rather than searched for as bare digits: this reads
+    the number actually attached to "conversions" and to "won deals" and checks
+    THAT value, so a wrong figure fails even if the right one appears elsewhere
+    in the file. `deals_won` is bound to the data; the platform conversion count
+    is a raw-side figure with no cell in output/, so it is pinned as a constant.
+    """
+    won = int(pd.read_csv("output/crm_by_sector.csv")["deals_won"].sum())
+    for pattern, label, expected in [
+        (WON_DEALS, "won deals", won),
+        (CONVERSIONS, "conversions", 326_812),
+    ]:
+        stated = [int(m.group(1).replace(",", "")) for m in pattern.finditer(text[doc])]
+        assert stated, f"{doc} no longer states a {label} count"
+        wrong = [v for v in stated if v != expected]
+        assert not wrong, f"{doc} states {label} as {wrong}, expected {expected:,}"
+
+
+def test_both_documents_state_the_contrast(text):
+    """Neither file may quietly drop the argument the other one makes."""
     for doc in DOCS:
-        assert str(won) in _nums(text[doc]), f"{doc} disagrees with deals_won={won}"
+        assert CONVERSIONS.search(text[doc]), f"{doc} dropped the conversions count"
+        assert WON_DEALS.search(text[doc]), f"{doc} dropped the won-deals count"
