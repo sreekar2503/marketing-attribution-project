@@ -1,0 +1,10 @@
+question,requires,before,after,status
+Which industry has the best return on ad spend?,Ads only,yes,yes,unchanged — answerable
+Which sector generates the most closed revenue?,CRM only,yes,yes,unchanged — answerable
+Does ad spend by industry match revenue by sector?,BOTH,no,yes,UNBLOCKED by crosswalk
+"What is cost per closed deal, by industry?",BOTH,no,yes,UNBLOCKED by crosswalk
+Do the two systems agree on revenue per ad dollar?,BOTH,no,yes,UNBLOCKED by crosswalk
+Should we shift budget from EdTech to Healthcare?,BOTH,no,no,still blocked
+Which platform (Google/Meta/TikTok) sources best deals?,BOTH + channel field,no,no,still blocked
+Did last month's spend produce this month's deals?,BOTH + overlapping dates,no,no,still blocked
+Which specific customers came from which campaign?,BOTH + shared identifier,no,no,still blocked

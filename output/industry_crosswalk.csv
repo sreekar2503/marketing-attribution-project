@@ -1,0 +1,12 @@
+ads_industry,crm_sector,confidence,direction,rationale
+Fintech,finance,High,ads→crm,"Financial-services targeting maps to finance-sector firms. Closest pair available; the only one fuzzy matching also found (score 57), by coincidence of shared stem."
+Healthcare,medical,High,ads→crm,"Same domain, different register: ads vocabulary uses the consumer-facing term, CRM uses the clinical one. No competing CRM sector."
+SaaS,software,High,ads→crm,Software-as-a-service targeting maps to software vendors. See note on `technolgy` — the adjacent sector is deliberately NOT folded in here.
+E-commerce,retail,Medium,ads→crm,"Online retail is a subset of retail, not a synonym. The CRM sector includes bricks-and-mortar accounts that no e-commerce campaign would target, so this mapping over-attributes CRM revenue to E-commerce spend by an unmeasurable amount."
+EdTech,,Gap,ads→crm,No CRM counterpart exists. Education is absent from the CRM sector vocabulary entirely. GENUINE COVERAGE GAP — not a mapping failure.
+,technolgy,Low,crm unmapped,"JUDGEMENT CALL, deliberately excluded. Could arguably fold into SaaS, but the data dictionary gives no definition separating it from `software`, and account names/firmographics provide no discriminating evidence. Second-largest sector by revenue, so the choice is material — see the sensitivity analysis in Step 6. Note: the value is misspelled in the source (`technolgy`), which is itself evidence the field was free-texted rather than governed."
+,employment,Gap,crm unmapped,No ads counterpart. Staffing/recruitment is not an ads vertical.
+,entertainment,Gap,crm unmapped,No ads counterpart.
+,marketing,Gap,crm unmapped,"No ads counterpart. (Marketing-services firms as *customers*, unrelated to the ads platform vocabulary.)"
+,services,Gap,crm unmapped,No ads counterpart. Too generic to map to any product vertical.
+,telecommunications,Gap,crm unmapped,No ads counterpart.

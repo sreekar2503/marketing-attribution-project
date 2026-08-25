@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Always runs. Validates the committed outputs and the crosswalk contract.
+  # Needs no raw data, so it works even if data/raw/ is gitignored.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Validate outputs and crosswalk
+        run: pytest tests/ -v
+
+      - name: Notebooks are committed in an executed state
+        run: python scripts/check_execution.py
+
+  # Only runs when the raw data is present. Re-executes every notebook end to
+  # end and fails if any cell errors -- the check that catches a silent break.
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Is the raw data committed?
+        id: data
+        run: |
+          if [ -f data/raw/ads_performance.csv ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::data/raw absent -- skipping notebook execution."
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.data.outputs.present == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        if: steps.data.outputs.present == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Execute notebooks in order
+        if: steps.data.outputs.present == 'true'
+        # No MPLBACKEND=Agg here. Setting it silently suppressed every figure on
+        # the first run of this project: 92KB of output instead of 316KB, and no
+        # error. Left as a comment because the temptation to add it is real.
+        run: |
+          for nb in notebooks/01_data_profiling.ipynb \
+                    notebooks/02_naive_join.ipynb \
+                    notebooks/03_reconciliation.ipynb \
+                    notebooks/04_before_after.ipynb; do
+            echo "::group::$nb"
+            jupyter nbconvert --to notebook --execute --inplace \
+              --ExecutePreprocessor.timeout=600 "$nb"
+            echo "::endgroup::"
+          done
+
+      - name: Outputs still match after re-execution
+        if: steps.data.outputs.present == 'true'
+        run: |
+          pytest tests/ -v
+          git diff --stat -- output/
+
+      - name: Upload re-executed notebooks
+        if: steps.data.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed-notebooks
+          path: notebooks/*.ipynb

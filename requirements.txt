@@ -1,0 +1,42 @@
+# Marketing Attribution & Systems-Integration Analysis
+# Python 3.12.3
+#
+# Versions pinned to the environment the committed notebook outputs were produced in
+# (pandas and numpy are printed by notebook 01, cell 1 — check that the value there
+# matches this file after any upgrade). A project whose central finding is that two
+# systems drifted apart without anyone noticing should not itself drift.
+#
+#   python3 -m venv venv && source venv/bin/activate
+#   pip install -r requirements.txt
+
+# ── Core analysis ──────────────────────────────────────────────────────────────
+pandas==3.0.2
+numpy==2.4.4
+
+# ── Storage / interchange ──────────────────────────────────────────────────────
+# Required by DataFrame.to_parquet / read_parquet for the data/clean/ handoff
+# between notebooks 01 and 02.
+pyarrow==21.0.0
+
+# ── Visualisation ──────────────────────────────────────────────────────────────
+matplotlib==3.10.8
+seaborn==0.13.2
+
+# ── Notebook environment ───────────────────────────────────────────────────────
+jupyterlab==4.4.9
+ipykernel==7.3.0
+
+# ── Fuzzy matching ─────────────────────────────────────────────────────────────
+# Used in exactly two cells (nb01 c45, nb02 c18), and only to demonstrate that
+# fuzzy matching FAILS on this problem. It is a negative result, not a dependency
+# the analysis relies on. python-Levenshtein is the optional C speedup; without it
+# thefuzz falls back to difflib and emits a warning but produces the same scores.
+thefuzz==0.22.1
+python-Levenshtein==0.27.1
+
+# ── Validation / CI ────────────────────────────────────────────────────────────
+# Not used by the notebooks. These back the Tier 1 hardening layer: pytest runs
+# tests/ against the committed outputs, pandera enforces src/schemas.py at load.
+# Both run in CI on every push.
+pytest==8.4.2
+pandera==0.27.1

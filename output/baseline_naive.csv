@@ -1,0 +1,2 @@
+stage,ads_categories,crm_categories,matched_categories,category_match_rate,ad_spend_total,ad_spend_matched,ad_spend_coverage,crm_revenue_total,crm_revenue_matched,crm_revenue_coverage,ads_reported_revenue,revenue_definition_gap
+naive_join,5,10,0,0.0,11108749.09,0.0,0.0,10005534.0,0.0,0.0,54183330.81,5.415336233928144
