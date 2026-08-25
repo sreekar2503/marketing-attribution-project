@@ -5,6 +5,24 @@
 
 Connecting ad platform spend to CRM closed revenue — and quantifying why the two systems cannot currently be joined.
 
+> **What this is.** A constructed case study of a known failure class, not a discovered finding
+> about a real company. Two real public datasets were chosen *because* they exhibit the failure:
+> an ad platform and a CRM that describe overlapping industries in different vocabularies, with
+> no shared key. That the naive join returns nothing was determined when the datasets were
+> selected — it is the premise, not the result. What follows is the diagnosis: why this class of
+> break is invisible to both systems, what it costs in dollars and percentage points, how far it
+> can be repaired at the analysis layer, and what remains unfixable without governance. The
+> mechanism is real and common; the specific instance is an example of it.
+
+---
+
+![Before and after the crosswalk: ad spend and CRM revenue reconciled from 0% to 79.3% and 52.5%](docs/img/04_1.png)
+
+*The whole result in one frame. Before, the naive join on industry matched **nothing** — not a
+small number, zero — and raised no error. After the crosswalk, 79.3% of ad spend and 52.5% of
+CRM revenue sit on a shared axis. The grey remainder is not a bug to fix; it is the measured
+size of what a reference table cannot repair after the fact.*
+
 ---
 
 ## Business Question
@@ -13,7 +31,9 @@ Connecting ad platform spend to CRM closed revenue — and quantifying why the t
 
 A marketing team buys ads across Google, Meta, and TikTok. A sales team tracks deals in a CRM. Leadership wants ad spend tied to closed revenue so budget can follow returns.
 
-Answering this requires joining the two systems. This project establishes that the join **cannot currently be made**, quantifies the gap, diagnoses why, and builds the one fix available at the analysis layer.
+Answering this requires joining the two systems. Here the join **cannot be made** — and the
+project's work is not discovering that, but quantifying the gap, diagnosing why the failure is
+silent, and building the one fix available at the analysis layer.
 
 ## Datasets
 
@@ -69,28 +89,18 @@ The mismatch is **semantic, not orthographic** — `Healthcare` and `medical` me
 
 ## A Second Disagreement: the same word, two definitions
 
-The 0% match rate is about the *join key*. There is a second failure underneath it that the
-match rate hides.
+The 0% match rate is about the *join key*. There is a second failure underneath it.
 
-Both systems ship a column called **`revenue`**, and they do not agree:
-
-| | Ad platform | CRM | Ratio |
-|---|---|---|---|
-| Reported revenue | \$54,183,331 | \$10,005,534 | **5.4x** |
-| Reported "successes" | 326,812 conversions | 4,238 won deals | **77x** |
-| Implied value per success | \$165.79 | \$2,360.91 | 14.2x |
-
-This is **not** a claim that the ad platform is overstating. The two datasets cover different
-periods (see A1) and are independent sources, so the ratio is not a like-for-like audit.
-
-The finding is that **the gap cannot be explained with the data available.** Two systems each
-report a figure called revenue, they differ by 5.4x, and there is no field in either system that
-reconciles them — no shared definition, no owner of the difference. Ask "what is our revenue?"
-and you get two defensible answers an order of magnitude apart with no way to adjudicate.
-
-The 77x gap in event counts is the clearer tell: a platform "conversion" is any tracked action
-(form fill, signup, add-to-cart); a "won deal" is a signed contract. Different units, same
+Both systems ship a column called **`revenue`**, and they do not mean the same thing by it. The
+ad platform counts 326,812 *conversions* — any tracked action, a form fill or an add-to-cart.
+The CRM counts 4,238 *won deals* — signed contracts. Different units, same word, same
 dashboards.
+
+The two figures are not comparable, and this project does not try to reconcile them: the
+datasets cover non-overlapping periods and are independent sources, so any ratio between them
+measures the mismatch in provenance as much as the mismatch in definition. That is the point.
+**Ask "what is our revenue?" and you get two defensible answers with no field in either system
+that adjudicates between them.**
 
 **This is the same root cause at a different layer.** The taxonomy mismatch is two vocabularies
 for one dimension; this is two definitions for one measure. Both come from the same unowned
@@ -181,20 +191,23 @@ instrumentation, schema, or process change, not analysis.
 
 ### What the fix exposed
 
-With both systems on one axis, revenue per ad dollar can be computed from each independently:
+With both systems on one axis, "revenue per ad dollar" can be computed from each side
+independently — and the two answers differ by an order of magnitude. The figures are in
+`output/cross_system_metrics.csv`; they are deliberately **not** quoted as a headline here,
+because the two sides cover non-overlapping periods and count different events, so neither has a
+break-even interpretation and a bare ratio invites being read as one.
 
-```
-Platform-reported (ads `revenue`):        4.84x
-CRM-anchored (closed-won `close_value`):  0.60x
-Divergence:                                8.1x
-```
+What matters is structural, not numeric: two systems inside one organisation answer *"what did a
+marketing dollar return?"* differently, and before the crosswalk that disagreement could not
+even be **stated** per-industry, because no row existed on which both numbers appeared.
 
-This is **not** evidence the ad platform inflates. The two sides cover non-overlapping periods
-six years apart and count different events (326,812 conversions vs 4,238 won deals), so neither
-figure has a break-even interpretation. What it shows is that two systems inside one
-organisation answer *"what did a marketing dollar return?"* with numbers an order of magnitude
-apart — and before the crosswalk, that disagreement could not even be stated per-industry,
-because no row existed on which both numbers appeared.
+![Industry mix: share of ad spend against share of CRM revenue, and the per-industry gap in percentage points](docs/img/03_1.png)
+
+*This chart could not have been drawn before the crosswalk existed — it needs both systems on one
+row. E-commerce takes 13.7pp more of closed revenue than it does of spend; Fintech 7.7pp less.
+Read it as where the two systems disagree, not as a budget instruction: `E-commerce`→`retail` is
+the crosswalk's one Medium-confidence mapping, so part of that +13.7 is mapping error rather
+than performance.*
 
 Making a disagreement visible is not resolving it. Resolution requires a definition both teams
 sign, which is governance, not analysis.
@@ -218,7 +231,7 @@ read:
 |---|---|---|---|---|
 | **1** | Mandatory `lead_source` picklist on lead capture forms, written to the CRM | No channel field; no shared identifier | Sales ops + web | Low — one field, one picklist |
 | **2** | A jointly-owned reference table for industry/sector, with a **named owner per value** | Taxonomy mismatch, permanently | Sales ops + marketing ops | Low to build, ongoing to govern |
-| **3** | A definition register for shared metrics — what counts as a conversion, what counts as revenue, over what window | The 8.1x revenue divergence | Finance + marketing + sales | Medium — requires agreement, not engineering |
+| **3** | A definition register for shared metrics — what counts as a conversion, what counts as revenue, over what window | Two definitions of one metric | Finance + marketing + sales | Medium — requires agreement, not engineering |
 | **4** | UTM tagging on all campaigns, captured at form submission | Deal-level attribution | Marketing ops | Medium |
 | **5** | Aligned reporting calendar / shared warehouse | Non-overlapping periods | Data platform | High |
 
@@ -274,9 +287,10 @@ Stated plainly, because a portfolio piece that only lists its strengths is an ad
   owns — is real and common; the specific instance is a convenient example of it, and the 15.1pp
   figure should be read as "here is what this class of gap costs," not as a measured finding
   about a real company.
-- **The 8.1x revenue divergence is not a like-for-like measurement.** Non-overlapping periods,
+- **The cross-system revenue comparison is not like-for-like.** Non-overlapping periods,
   different event definitions. It demonstrates that two systems can disagree by an order of
-  magnitude with nothing reconciling them; it does not quantify any real platform's inflation.
+  magnitude with nothing reconciling them; it does not quantify any real platform's inflation,
+  which is why no ratio is quoted as a finding.
 - **`E-commerce`→`retail` is Medium confidence and over-attributes** by an unmeasurable amount,
   because the CRM's retail sector contains accounts no e-commerce campaign would target.
 - **A2 (sector as audience proxy) is unfalsifiable with this data.** Nothing establishes that any
@@ -301,18 +315,30 @@ The remaining fixes are organisational and are listed above.
 ```
 marketing-attribution-project/
 ├── data/
-│   ├── raw/                    # untouched source data
+│   ├── raw/                     # untouched source data (validated at load, never edited)
 │   │   ├── ads_performance.csv
 │   │   └── crm_sales_opps/
-│   └── clean/                  # typed/enriched intermediates
+│   └── clean/                   # typed/enriched intermediates (gitignored, regenerated by nb01)
 ├── notebooks/
-│   ├── 01_data_profiling.ipynb # profile each system in isolation
-│   ├── 02_naive_join.ipynb     # attempt join, quantify 0% match rate
-│   ├── 03_reconciliation.ipynb # build + validate the crosswalk, measure recovered coverage
-│   └── 04_before_after.ipynb   # before/after comparison, cross-system metrics
-├── output/                     # aggregates, baselines, crosswalk, comparisons
-├── .gitignore
-├── requirements.txt            # pinned to the environment outputs were built in
+│   ├── 01_data_profiling.ipynb  # profile each system in isolation; validate schemas at load
+│   ├── 02_naive_join.ipynb      # attempt the join, quantify the 0% match rate
+│   ├── 03_reconciliation.ipynb  # build + validate the crosswalk, measure recovered coverage
+│   └── 04_before_after.ipynb    # before/after comparison, cross-system metrics
+├── src/
+│   └── schemas.py               # pandera closed-set vocabularies — the constraint missing
+│                                #   at the source, applied at the analysis boundary
+├── tests/
+│   ├── test_crosswalk.py        # the crosswalk is a complete, non-overlapping partition
+│   ├── test_outputs.py          # pins every figure this README quotes
+│   └── test_schemas.py          # the contracts hold, and reject what they should
+├── scripts/
+│   └── check_execution.py       # committed notebooks are in a clean, sequential executed state
+├── .github/workflows/ci.yml     # validate (always) + execute (when raw data is present)
+├── docs/img/                    # figures embedded above, exported from the notebooks
+├── output/                      # aggregates, baselines, crosswalk, comparisons
+├── EXECUTIVE_SUMMARY.md         # one page, non-technical
+├── LICENSE
+├── requirements.txt             # pinned to the environment the outputs were built in
 └── README.md
 ```
 

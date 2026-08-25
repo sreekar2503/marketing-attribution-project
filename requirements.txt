@@ -34,9 +34,14 @@ ipykernel==7.3.0
 thefuzz==0.22.1
 python-Levenshtein==0.27.1
 
-# ── Validation / CI ────────────────────────────────────────────────────────────
-# Not used by the notebooks. These back the Tier 1 hardening layer: pytest runs
-# tests/ against the committed outputs, pandera enforces src/schemas.py at load.
-# Both run in CI on every push.
-pytest==8.4.2
+# ── Schema enforcement ─────────────────────────────────────────────────────────
+# Required to run the notebooks. Notebook 01 validates every raw file at load
+# through src/schemas.py -- a new industry or sector stops the pipeline there
+# rather than flowing silently into an unmatched bucket. Removing this does not
+# degrade gracefully; nb01 will not run without it, which is the intent.
 pandera==0.27.1
+
+# ── Tests ──────────────────────────────────────────────────────────────────────
+# Not needed to run the notebooks. Runs tests/ against the committed outputs,
+# the crosswalk contract, and the schemas. Both CI jobs invoke it on every push.
+pytest==8.4.2
