@@ -1,0 +1,5 @@
+scenario,confidence,ad_spend_matched,ad_spend_coverage,crm_revenue_matched,crm_revenue_coverage,ad_delta_pp,crm_delta_pp
+Base case (as shipped),-,8811770.57,0.7932279772105286,5255965.0,0.5253057957726194,0.0,0.0
+technolgy -> SaaS (fold the Low-confidence sector in),Low,8811770.57,0.7932279772105286,6771452.0,0.6767706751083951,0.0,15.146487933577568
+E-commerce -> retail dropped (reject the Medium mapping),Medium,6887783.49,0.6200323217490189,3388437.0,0.33865628761043637,-17.319565546150972,-18.6649508162183
+Both reversed,Low + Medium,6887783.49,0.6200323217490189,4903924.0,0.49012116694621194,-17.319565546150972,-3.518462882640744

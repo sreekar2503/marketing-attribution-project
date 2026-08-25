@@ -119,8 +119,17 @@ def accepted_pct():
     ba = pd.read_csv("output/before_after_comparison.csv")
     mix = pd.read_csv("output/mix_comparison.csv")
     crm = pd.read_csv("output/crm_by_sector.csv")
+    sens = pd.read_csv("output/sensitivity.csv")
 
     ok = set(CONTEXTUAL_PCT)
+    # The sensitivity band: every scenario's coverage, and every delta. The
+    # README and the executive summary both quote from this, at both precisions.
+    for col in ["ad_spend_coverage", "crm_revenue_coverage"]:
+        for v in sens[col]:
+            ok |= _pct(v * 100)
+    for col in ["ad_delta_pp", "crm_delta_pp"]:
+        for v in sens[col]:
+            ok |= _pct(abs(v))
     for col in ["ad_spend_coverage", "crm_revenue_coverage", "category_match_rate"]:
         for v in ba[col]:
             ok |= _pct(v * 100)
@@ -152,6 +161,8 @@ def accepted_usd():
                 "crm_revenue_total", "crm_revenue_matched"]:
         values |= set(ba[col])
     values |= set(crm["crm_revenue"]) | set(ads["ad_spend"])
+    sens = pd.read_csv("output/sensitivity.csv")
+    values |= set(sens["ad_spend_matched"]) | set(sens["crm_revenue_matched"])
 
     # Derived, and quoted: the unreconciled remainders in the before/after chart,
     # and the technolgy-inclusive alternative in the sensitivity table.

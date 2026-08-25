@@ -61,6 +61,11 @@ written justification and a confidence level for every single row.
 | Ad spend we can compare against sales | **0%** | **79%** |
 | Sales revenue we can compare against ads | **0%** | **53%** |
 
+**These figures depend on two category judgements nobody ever wrote down.** Reasonable
+alternative choices move ad spend anywhere in the **62–79%** range and sales revenue anywhere in
+the **34–68%** range. We report the middle of that as our answer and the width of it as the cost
+of the missing definitions — see the note on `technolgy` below.
+
 Three previously unanswerable questions are now answerable. **Four are still blocked** — they need
 changes to how data is captured, not more analysis.
 
@@ -79,11 +84,16 @@ still cannot attribute a specific deal to a specific campaign.
 | **4** | Add campaign tracking codes to all ads, captured on form submission | Marketing ops | **Medium** |
 | **5** | Align the reporting calendars across both systems | Data platform | **High** |
 
-**Why #2 ranks so highly despite being unglamorous:** one CRM category — spelled `technolgy`,
-misspelled, with no written definition — single-handedly swings our results by **15 percentage
-points**, depending on whether we count it as software or not. Nobody can tell us which it should
-be, because nobody ever wrote it down. That is a fifteen-point swing caused by an unowned word.
-No amount of engineering fixes it. Somebody has to decide it once and record the decision.
+**Why #2 ranks so highly despite being unglamorous:** two CRM categories with no written
+definition move our results more than any analysis choice we made. One is spelled `technolgy` —
+misspelled, and worth **15 percentage points** depending on whether we count it as software. The
+other is whether online retail and retail are the same thing, worth **19 points**. Nobody can
+tell us the answer to either, because nobody ever wrote it down.
+
+Note which is bigger. The one we were *least* sure about was not the one that mattered most —
+so being uncertain and being important are not the same thing, and you only find out which is
+which by checking both. No amount of engineering fixes this. Somebody has to decide each of
+them once and record the decision.
 
 ---
 

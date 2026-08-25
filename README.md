@@ -25,6 +25,37 @@ size of what a reference table cannot repair after the fact.*
 
 ---
 
+## The headline is a range
+
+Reconciling the two systems lifts what can be compared from **0%** to **79.3% of ad spend** and
+**52.5% of CRM revenue**. But that pair of numbers rests on two category decisions that the data
+cannot settle, and stating them as points would hide that:
+
+| Uncertain decision | Confidence | Ad spend coverage | CRM revenue coverage |
+|---|---|---|---|
+| **Base case (as shipped)** | — | **79.3%** | **52.5%** |
+| `technolgy` folded into `SaaS` | Low | 79.3% | 67.7% |
+| `E-commerce`→`retail` rejected | Medium | 62.0% | 33.9% |
+| Both reversed | Low + Medium | 62.0% | 49.0% |
+
+**Ad spend 62.0–79.3%. CRM revenue 33.9–67.7%.** Two words nobody ever defined move the
+headline across a 17- and a 34-point band. Full table: [`output/sensitivity.csv`](output/sensitivity.csv).
+
+Two things in that table are worth more than the range itself:
+
+1. **The `Medium`-confidence mapping costs more than the `Low`-confidence one** — 18.7pp against
+   15.1pp of CRM revenue. Confidence labels rank how *well-supported* a decision is, not how much
+   *rides* on it. Pricing only the mapping that felt uncertain would have measured the smaller of
+   the two.
+2. **They push in opposite directions.** Excluding `technolgy` understates coverage; including
+   `E-commerce`→`retail` overstates it. The base case is not a floor or a ceiling — it is one
+   defensible point inside a band.
+
+This is the project's actual argument, in one table: *undocumented decisions have a price, and
+you can only see it if you go looking.*
+
+---
+
 ## Business Question
 
 > "Which ad channels are actually producing revenue?"
@@ -131,23 +162,33 @@ Coverage is **asymmetric by design**. The CRM describes 10 sectors; the ad platf
 into (`employment`, `entertainment`, `telecommunications`, `services`) — a finding about the
 business, not mapping debt.
 
-### The judgement call, quantified
+### The judgement calls, priced
 
-`technolgy` (misspelled in source) could arguably fold into `SaaS`. The CRM's data dictionary
-defines `sector` as **"Industry"** and nothing else — there is no written definition separating
-it from `software`, and account names and firmographics provide no discriminating evidence.
+Two mappings in the crosswalk are not settled by evidence, and they are the reason the headline
+above is a range. Both are priced the same way: reverse the decision, recompute coverage.
 
-It is excluded from the base case and the cost of that choice is measured rather than hidden:
+**`technolgy` — excluded from the base case.** Misspelled in source, and it could arguably fold
+into `SaaS`. The CRM's data dictionary defines `sector` as **"Industry"** and nothing else, so
+there is no written definition separating it from `software`; account names and firmographics
+provide no discriminating evidence. Excluding it costs **15.1pp** of CRM revenue coverage
+(\$5,255,965 → \$6,771,452, 52.5% → 67.7%) and would more than double SaaS-mapped revenue.
 
-| Scenario | CRM revenue reconciled | Coverage |
-|---|---|---|
-| Base case (excluded) | \$5,255,965 | 52.5% |
-| Alternative (`technolgy` → SaaS) | \$6,771,452 | 67.7% |
+**`E-commerce`→`retail` — included in the base case.** The one `Medium`-confidence mapping in
+the table. Online retail is a subset of retail, not a synonym: the CRM's `retail` sector holds
+bricks-and-mortar accounts no e-commerce campaign would target, so the mapping over-attributes.
+By how much cannot be resolved from the data — but the upper bound can be. Dropping it entirely
+costs **18.7pp** of CRM revenue and **17.3pp** of ad spend.
 
-**One undocumented sector is worth 15.1 percentage points of coverage** and would more than
-double SaaS-mapped revenue. That is the single strongest argument in this project for a governed
-reference table: the information needed to settle it does not exist in the data, only in what
-someone meant when they typed the word six years ago.
+The second one is larger, and it was the one *not* originally measured. An earlier version of
+this README called its over-attribution "an unmeasurable amount," which was wrong in a
+particular way: the *true* value is unmeasurable, but the *bound* is not, and the method for
+bounding it was already written and applied to the other mapping. Confidence labels had ranked
+the two decisions by how well-supported they were, and that ordering was quietly mistaken for
+how much each was worth.
+
+That is the strongest argument in this project for a governed reference table. The information
+needed to settle either question does not exist in the data — only in what someone meant when
+they typed the word six years ago, into a free-text field they then misspelled.
 
 ## Root Cause
 
@@ -291,8 +332,10 @@ Stated plainly, because a portfolio piece that only lists its strengths is an ad
   different event definitions. It demonstrates that two systems can disagree by an order of
   magnitude with nothing reconciling them; it does not quantify any real platform's inflation,
   which is why no ratio is quoted as a finding.
-- **`E-commerce`→`retail` is Medium confidence and over-attributes** by an unmeasurable amount,
-  because the CRM's retail sector contains accounts no e-commerce campaign would target.
+- **`E-commerce`→`retail` is Medium confidence and over-attributes** by an amount the data
+  cannot resolve, because the CRM's retail sector contains accounts no e-commerce campaign would
+  target. The *bound* is measured — dropping the mapping costs 18.7pp of CRM revenue coverage —
+  but a bound is not an estimate, and nothing here says where in that band the truth sits.
 - **A2 (sector as audience proxy) is unfalsifiable with this data.** Nothing establishes that any
   ad reached any account.
 
@@ -336,6 +379,7 @@ marketing-attribution-project/
 ├── .github/workflows/ci.yml     # validate (always) + execute (when raw data is present)
 ├── docs/img/                    # figures embedded above, exported from the notebooks
 ├── output/                      # aggregates, baselines, crosswalk, comparisons
+│   └── sensitivity.csv          # what each uncertain mapping is worth
 ├── EXECUTIVE_SUMMARY.md         # one page, non-technical
 ├── LICENSE
 ├── requirements.txt             # pinned to the environment the outputs were built in
