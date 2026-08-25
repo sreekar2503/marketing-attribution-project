@@ -1,6 +1,6 @@
 # Can we tell which ads are producing revenue?
 
-**Executive summary — Marketing Attribution & Systems-Integration Analysis**
+**Executive summary — Attribution Feasibility Audit**
 
 ---
 

@@ -1,9 +1,14 @@
-# Marketing Attribution & Systems-Integration Analysis
+# Attribution Feasibility Audit
 
-[![CI](https://github.com/sreekar2503/marketing-attribution-project/actions/workflows/ci.yml/badge.svg)](https://github.com/sreekar2503/marketing-attribution-project/actions/workflows/ci.yml)
+**Can ad spend be tied to closed revenue? Not with these two systems — and here is exactly why, and what it would take.**
+
+[![CI](https://github.com/sreekar2503/attribution-feasibility-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/sreekar2503/attribution-feasibility-audit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Connecting ad platform spend to CRM closed revenue — and quantifying why the two systems cannot currently be joined.
+This is a **feasibility audit, not an attribution model.** The question was whether ad spend
+could be connected to closed revenue across an ad platform and a CRM. The answer is no — the
+systems share no key and no vocabulary — so the deliverable is the diagnosis, the partial repair,
+and a priced account of what the repair still cannot tell you.
 
 > **What this is.** A constructed case study of a known failure class, not a discovered finding
 > about a real company. Two real public datasets were chosen *because* they exhibit the failure:
@@ -356,7 +361,7 @@ The remaining fixes are organisational and are listed above.
 ## Repo Structure
 
 ```
-marketing-attribution-project/
+attribution-feasibility-audit/
 ├── data/
 │   ├── raw/                     # untouched source data (validated at load, never edited)
 │   │   ├── ads_performance.csv
