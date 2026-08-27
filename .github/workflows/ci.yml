@@ -73,9 +73,13 @@ jobs:
 
       - name: Outputs still match after re-execution
         if: steps.data.outputs.present == 'true'
+        # --exit-code, not --stat. `git diff --stat` prints the difference and
+        # exits 0 either way, so this step reported drift in the log and passed
+        # anyway -- a check that could not fail, which is the failure mode this
+        # whole project is about. Do not simplify it back.
         run: |
           pytest tests/ -v
-          git diff --stat -- output/
+          git diff --exit-code -- output/
 
       - name: Upload re-executed notebooks
         if: steps.data.outputs.present == 'true'
